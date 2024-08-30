@@ -1,4 +1,4 @@
-# Weather Data Integration Project
+# Weather Data Integration Pipeline
 
 This project simulates the integration of a third-party reporting tool 
 (OpenWeatherMap API) with a data system. It includes an end-to-end ETL 
