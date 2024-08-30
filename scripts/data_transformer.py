@@ -1,31 +1,43 @@
-import pandas as pd
+from pyspark.sql import SparkSession
+from pyspark.sql.functions import col, to_date, to_timestamp, round, dense_rank, lit
+from pyspark.sql.window import Window
+import pyspark.sql.functions as F
 from datetime import datetime
 
+def create_spark_session():
+    return SparkSession.builder \
+        .appName("WeatherETL") \
+        .getOrCreate()
+
 def transform_weather_data(raw_data):
-    df = pd.DataFrame(raw_data)
+    spark = create_spark_session()
     
-    # Convert datetime string to datetime object
-    df['datetime'] = pd.to_datetime(df['datetime'])
+    # Convert raw data to Spark DataFrame
+    df = spark.createDataFrame(raw_data)
+    
+    # Convert datetime string to timestamp
+    df = df.withColumn("datetime", to_timestamp(col("datetime")))
     
     # Extract date and time into separate columns
-    df['date'] = df['datetime'].dt.date
-    df['time'] = df['datetime'].dt.time
+    df = df.withColumn("date", to_date(col("datetime"))) \
+           .withColumn("time", to_timestamp(col("datetime")))
     
     # Round temperature to 1 decimal place
-    df['temperature'] = df['temperature'].round(1)
+    df = df.withColumn("temperature", round(col("temperature"), 1))
     
     # Convert wind speed from m/s to km/h
-    df['wind_speed'] = (df['wind_speed'] * 3.6).round(1)
+    df = df.withColumn("wind_speed", round(col("wind_speed") * 3.6, 1))
     
     # Create a unique identifier for each city
-    df['city_id'] = df.groupby(['city_name', 'country']).ngroup()
+    window = Window.orderBy("city_name", "country")
+    df = df.withColumn("city_id", dense_rank().over(window))
     
     # Split into fact and dimension dataframes
     fact_columns = ['date', 'time', 'city_id', 'temperature', 'humidity', 'pressure', 'wind_speed']
-    fact_df = df[fact_columns]
+    fact_df = df.select(fact_columns)
     
     dim_columns = ['city_id', 'city_name', 'country', 'latitude', 'longitude']
-    dim_df = df[dim_columns].drop_duplicates()
+    dim_df = df.select(dim_columns).dropDuplicates()
     
     return fact_df, dim_df
 
@@ -61,8 +73,8 @@ if __name__ == "__main__":
     
     fact_df, dim_df = transform_weather_data(test_data)
     print("Fact DataFrame:")
-    print(fact_df)
+    fact_df.show()
     print("\nDimension DataFrame:")
-    print(dim_df)
+    dim_df.show()
     
     print(f"\nLatest Batch ID: {get_latest_batch_id()}")

@@ -4,3 +4,4 @@ SQLAlchemy
 requests
 pandas
 python-dotenv
+pyspark

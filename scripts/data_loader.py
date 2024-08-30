@@ -1,6 +1,6 @@
 import os
-from sqlalchemy import create_engine, Table, Column, Integer, Float, String, Date, Time, MetaData
-from sqlalchemy.dialects.postgresql import insert
+from pyspark.sql import SparkSession
+from pyspark.sql.functions import col
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -11,74 +11,80 @@ DB_HOST = os.getenv('POSTGRES_HOST')
 DB_PORT = os.getenv('POSTGRES_PORT')
 DB_NAME = os.getenv('POSTGRES_DB')
 
-DATABASE_URL = f"postgresql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
+JDBC_URL = f"jdbc:postgresql://{DB_HOST}:{DB_PORT}/{DB_NAME}"
 
-def create_tables():
-    engine = create_engine(DATABASE_URL)
-    metadata = MetaData()
+def create_spark_session():
+    return SparkSession.builder \
+        .appName("WeatherETL") \
+        .config("spark.jars", "/path/to/postgresql-42.2.23.jar") \
+        .getOrCreate()
 
-    cities = Table('cities', metadata,
-        Column('city_id', Integer, primary_key=True),
-        Column('city_name', String),
-        Column('country', String),
-        Column('latitude', Float),
-        Column('longitude', Float)
-    )
-
-    weather_measurements = Table('weather_measurements', metadata,
-        Column('id', Integer, primary_key=True),
-        Column('date', Date),
-        Column('time', Time),
-        Column('city_id', Integer),
-        Column('temperature', Float),
-        Column('humidity', Integer),
-        Column('pressure', Integer),
-        Column('wind_speed', Float)
-    )
-
-    metadata.create_all(engine)
-    return engine, cities, weather_measurements
+def create_tables(spark):
+    # Define the schema for cities table
+    cities_schema = """
+    city_id INT PRIMARY KEY,
+    city_name STRING,
+    country STRING,
+    latitude FLOAT,
+    longitude FLOAT
+    """
+    
+    # Define the schema for weather_measurements table
+    weather_measurements_schema = """
+    id INT PRIMARY KEY,
+    date DATE,
+    time TIME,
+    city_id INT,
+    temperature FLOAT,
+    humidity INT,
+    pressure INT,
+    wind_speed FLOAT
+    """
+    
+    # Create tables if they don't exist
+    spark.sql(f"CREATE TABLE IF NOT EXISTS cities ({cities_schema}) USING JDBC OPTIONS (url '{JDBC_URL}', dbtable 'cities', user '{DB_USER}', password '{DB_PASSWORD}')")
+    spark.sql(f"CREATE TABLE IF NOT EXISTS weather_measurements ({weather_measurements_schema}) USING JDBC OPTIONS (url '{JDBC_URL}', dbtable 'weather_measurements', user '{DB_USER}', password '{DB_PASSWORD}')")
 
 def load_data(fact_df, dim_df):
-    engine, cities, weather_measurements = create_tables()
+    spark = create_spark_session()
+    create_tables(spark)
+    
+    # Write dimension data
+    dim_df.write \
+        .format("jdbc") \
+        .option("url", JDBC_URL) \
+        .option("dbtable", "cities") \
+        .option("user", DB_USER) \
+        .option("password", DB_PASSWORD) \
+        .mode("overwrite") \
+        .save()
 
-    with engine.connect() as connection:
-        for _, row in dim_df.iterrows():
-            insert_stmt = insert(cities).values(row.to_dict())
-            on_conflict_stmt = insert_stmt.on_conflict_do_update(
-                index_elements=['city_id'],
-                set_={c.key: c for c in insert_stmt.excluded if c.key != 'city_id'}
-            )
-            connection.execute(on_conflict_stmt)
-
-        for _, row in fact_df.iterrows():
-            connection.execute(weather_measurements.insert().values(row.to_dict()))
+    # Write fact data
+    fact_df.write \
+        .format("jdbc") \
+        .option("url", JDBC_URL) \
+        .option("dbtable", "weather_measurements") \
+        .option("user", DB_USER) \
+        .option("password", DB_PASSWORD) \
+        .mode("append") \
+        .save()
 
     print("Data loaded successfully.")
 
 if __name__ == "__main__":
-    import pandas as pd
-
+    spark = create_spark_session()
+    
     # Test data
-    fact_data = {
-        'date': ['2023-05-01', '2023-05-01'],
-        'time': ['12:00:00', '12:00:00'],
-        'city_id': [0, 1],
-        'temperature': [22.5, 15.3],
-        'humidity': [60, 72],
-        'pressure': [1015, 1008],
-        'wind_speed': [18.36, 15.12]
-    }
+    fact_data = [
+        ('2023-05-01', '12:00:00', 0, 22.5, 60, 1015, 18.36),
+        ('2023-05-01', '12:00:00', 1, 15.3, 72, 1008, 15.12)
+    ]
+    fact_df = spark.createDataFrame(fact_data, ["date", "time", "city_id", "temperature", "humidity", "pressure", "wind_speed"])
 
-    dim_data = {
-        'city_id': [0, 1],
-        'city_name': ['New York', 'London'],
-        'country': ['US', 'GB'],
-        'latitude': [40.7128, 51.5074],
-        'longitude': [-74.0060, -0.1278]
-    }
-
-    fact_df = pd.DataFrame(fact_data)
-    dim_df = pd.DataFrame(dim_data)
+    dim_data = [
+        (0, 'New York', 'US', 40.7128, -74.0060),
+        (1, 'London', 'GB', 51.5074, -0.1278)
+    ]
+    dim_df = spark.createDataFrame(dim_data, ["city_id", "city_name", "country", "latitude", "longitude"])
 
     load_data(fact_df, dim_df)
