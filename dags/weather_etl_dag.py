@@ -1,16 +1,12 @@
-import os
-import sys
 from airflow import DAG
 from airflow.operators.python import PythonOperator
 from datetime import datetime, timedelta
+import sys
+import os
 from pyspark.sql import SparkSession
 
-# Add the project root directory to the Python path
-dag_folder = os.path.dirname(os.path.abspath(__file__))
-project_root = os.path.abspath(os.path.join(dag_folder, '..'))
-sys.path.append(project_root)
+sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 
-# Now import your scripts
 from scripts.api_client import fetch_weather_data
 from scripts.data_transformer import transform_weather_data
 from scripts.data_loader import load_data, create_spark_session, create_tables
