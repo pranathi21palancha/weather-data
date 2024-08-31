@@ -6,6 +6,9 @@ from datetime import datetime
 load_dotenv()
 
 API_KEY = os.getenv('OPENWEATHERMAP_API_KEY')
+if not API_KEY:
+    raise ValueError("OpenWeatherMap API key is not set in the .env file")
+
 BASE_URL = "http://api.openweathermap.org/data/2.5/weather"
 
 CITIES = [

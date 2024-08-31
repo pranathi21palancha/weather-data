@@ -29,11 +29,17 @@ dag = DAG(
 )
 
 def etl_process():
-    spark = create_spark_session()
-    raw_data = fetch_weather_data()
-    fact_df, dim_df = transform_weather_data(spark, raw_data)
-    load_data(fact_df, dim_df)
-    spark.stop()
+    try:
+        spark = create_spark_session()
+        raw_data = fetch_weather_data()
+        if not raw_data:
+            raise ValueError("No data fetched from the API")
+        fact_df, dim_df = transform_weather_data(spark, raw_data)
+        load_data(fact_df, dim_df)
+        spark.stop()
+    except Exception as e:
+        print(f"Error in ETL process: {str(e)}")
+        raise
 
 with dag:
     create_tables_task = PythonOperator(

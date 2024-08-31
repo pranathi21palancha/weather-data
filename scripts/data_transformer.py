@@ -7,6 +7,8 @@ from datetime import datetime
 def create_spark_session():
     return SparkSession.builder \
         .appName("WeatherETL") \
+        .config("spark.jars", "/Users/stuartmills/Documents/weather-data-integration/postgresql-42.7.4.jar") \
+        .config("spark.driver.extraClassPath", "/Users/stuartmills/Documents/weather-data-integration/postgresql-42.7.4.jar") \
         .getOrCreate()
 
 def transform_weather_data(spark, raw_data):
