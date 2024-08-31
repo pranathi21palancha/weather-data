@@ -1,9 +1,17 @@
 import os
+import sys
 from pyspark.sql import SparkSession
 from sqlalchemy import create_engine, text
 from dotenv import load_dotenv
 
-load_dotenv()
+# Set the PYSPARK_SUBMIT_ARGS environment variable
+os.environ['PYSPARK_SUBMIT_ARGS'] = '--jars /Users/stuartmills/Documents/weather-data-integration/postgresql-42.7.4.jar pyspark-shell'
+
+# Add the project root to the Python path
+project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+sys.path.append(project_root)
+
+load_dotenv(os.path.join(project_root, '.env'))
 
 DB_USER = os.getenv('POSTGRES_USER')
 DB_PASSWORD = os.getenv('POSTGRES_PASSWORD')
@@ -16,7 +24,7 @@ JDBC_URL = f"jdbc:postgresql://{DB_HOST}:{DB_PORT}/{DB_NAME}"
 def create_spark_session():
     return SparkSession.builder \
         .appName("WeatherETL") \
-        .config("spark.jars", "/absolute/path/to/postgresql-42.2.23.jar") \
+        .config("spark.jars", "/Users/stuartmills/Documents/weather-data-integration/postgresql-42.7.4.jar") \
         .getOrCreate()
 
 def create_tables():
