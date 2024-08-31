@@ -5,9 +5,10 @@ from airflow.operators.python import PythonOperator
 from datetime import datetime, timedelta
 from pyspark.sql import SparkSession
 
+# Add the project root directory to the Python path
 dag_folder = os.path.dirname(os.path.abspath(__file__))
 project_root = os.path.abspath(os.path.join(dag_folder, '..'))
-sys.path.append(project_root)
+sys.path.insert(0, project_root)
 
 from scripts.api_client import fetch_weather_data
 from scripts.data_transformer import transform_weather_data
