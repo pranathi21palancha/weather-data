@@ -1,6 +1,6 @@
 import os
 from pyspark.sql import SparkSession
-from pyspark.sql.functions import col
+from sqlalchemy import create_engine, text
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -16,40 +16,38 @@ JDBC_URL = f"jdbc:postgresql://{DB_HOST}:{DB_PORT}/{DB_NAME}"
 def create_spark_session():
     return SparkSession.builder \
         .appName("WeatherETL") \
-        .config("spark.jars", "/path/to/postgresql-42.2.23.jar") \
+        .config("spark.jars", "/absolute/path/to/postgresql-42.2.23.jar") \
         .getOrCreate()
 
-def create_tables(spark):
-    # Define the schema for cities table
-    cities_schema = """
-    city_id INT PRIMARY KEY,
-    city_name STRING,
-    country STRING,
-    latitude FLOAT,
-    longitude FLOAT
-    """
-    
-    # Define the schema for weather_measurements table
-    weather_measurements_schema = """
-    id INT PRIMARY KEY,
-    date DATE,
-    time TIME,
-    city_id INT,
-    temperature FLOAT,
-    humidity INT,
-    pressure INT,
-    wind_speed FLOAT
-    """
-    
-    # Create tables if they don't exist
-    spark.sql(f"CREATE TABLE IF NOT EXISTS cities ({cities_schema}) USING JDBC OPTIONS (url '{JDBC_URL}', dbtable 'cities', user '{DB_USER}', password '{DB_PASSWORD}')")
-    spark.sql(f"CREATE TABLE IF NOT EXISTS weather_measurements ({weather_measurements_schema}) USING JDBC OPTIONS (url '{JDBC_URL}', dbtable 'weather_measurements', user '{DB_USER}', password '{DB_PASSWORD}')")
+def create_tables():
+    engine = create_engine(f"postgresql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}")
+    with engine.connect() as connection:
+        connection.execute(text("""
+            CREATE TABLE IF NOT EXISTS cities (
+                city_id INT PRIMARY KEY,
+                city_name VARCHAR(255),
+                country VARCHAR(2),
+                latitude FLOAT,
+                longitude FLOAT
+            )
+        """))
+        connection.execute(text("""
+            CREATE TABLE IF NOT EXISTS weather_measurements (
+                id SERIAL PRIMARY KEY,
+                date DATE,
+                time TIME,
+                city_id INT,
+                temperature FLOAT,
+                humidity INT,
+                pressure INT,
+                wind_speed FLOAT
+            )
+        """))
+    print("Tables created successfully.")
 
 def load_data(fact_df, dim_df):
     spark = create_spark_session()
-    create_tables(spark)
     
-    # Write dimension data
     dim_df.write \
         .format("jdbc") \
         .option("url", JDBC_URL) \
@@ -59,7 +57,6 @@ def load_data(fact_df, dim_df):
         .mode("overwrite") \
         .save()
 
-    # Write fact data
     fact_df.write \
         .format("jdbc") \
         .option("url", JDBC_URL) \
@@ -72,9 +69,9 @@ def load_data(fact_df, dim_df):
     print("Data loaded successfully.")
 
 if __name__ == "__main__":
+    create_tables()
     spark = create_spark_session()
     
-    # Test data
     fact_data = [
         ('2023-05-01', '12:00:00', 0, 22.5, 60, 1015, 18.36),
         ('2023-05-01', '12:00:00', 1, 15.3, 72, 1008, 15.12)

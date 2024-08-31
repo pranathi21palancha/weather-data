@@ -5,12 +5,11 @@ import sys
 import os
 from pyspark.sql import SparkSession
 
-# Add the project root directory to the Python path
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 
 from scripts.api_client import fetch_weather_data
 from scripts.data_transformer import transform_weather_data
-from scripts.data_loader import load_data, create_spark_session
+from scripts.data_loader import load_data, create_spark_session, create_tables
 
 default_args = {
     'owner': 'airflow',
@@ -29,26 +28,25 @@ dag = DAG(
     schedule_interval=timedelta(days=1),
 )
 
+def create_tables_task():
+    create_tables()
+
 def etl_process():
-    # Create Spark session
     spark = create_spark_session()
-
-    # Extract
     raw_data = fetch_weather_data()
-    
-    # Transform
     fact_df, dim_df = transform_weather_data(spark, raw_data)
-    
-    # Load
     load_data(fact_df, dim_df)
-
-    # Stop Spark session
     spark.stop()
 
 with dag:
+    create_tables = PythonOperator(
+        task_id='create_tables',
+        python_callable=create_tables_task,
+    )
+    
     etl_task = PythonOperator(
         task_id='weather_etl_process',
         python_callable=etl_process,
     )
-
-etl_task
+    
+    create_tables >> etl_task
