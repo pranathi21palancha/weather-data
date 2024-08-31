@@ -1,15 +1,35 @@
+import os
+import sys
 from airflow import DAG
 from airflow.operators.python import PythonOperator
 from datetime import datetime, timedelta
-import sys
-import os
 from pyspark.sql import SparkSession
 
-sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
+# Add the project root directory to the Python path
+dag_folder = os.path.dirname(os.path.abspath(__file__))
+project_root = os.path.abspath(os.path.join(dag_folder, '..'))
+sys.path.append(project_root)
 
+# Now import your scripts
 from scripts.api_client import fetch_weather_data
 from scripts.data_transformer import transform_weather_data
-from scripts.data_loader import load_data, create_spark_session, create_tables
+from scripts.data_loader import load_data, create_tables
+
+def create_spark_session():
+    return SparkSession.builder \
+        .appName("WeatherETL") \
+        .config("spark.jars", "/Users/stuartmills/Documents/weather-data-integration/postgresql-42.7.4.jar") \
+        .config("spark.driver.extraClassPath", "/Users/stuartmills/Documents/weather-data-integration/postgresql-42.7.4.jar") \
+        .getOrCreate()
+
+def etl_process():
+    spark = create_spark_session()
+    try:
+        raw_data = fetch_weather_data()
+        fact_df, dim_df = transform_weather_data(spark, raw_data)
+        load_data(fact_df, dim_df)
+    finally:
+        spark.stop()
 
 default_args = {
     'owner': 'airflow',
@@ -27,19 +47,6 @@ dag = DAG(
     description='A DAG for weather data ETL process using Spark',
     schedule_interval=timedelta(days=1),
 )
-
-def etl_process():
-    try:
-        spark = create_spark_session()
-        raw_data = fetch_weather_data()
-        if not raw_data:
-            raise ValueError("No data fetched from the API")
-        fact_df, dim_df = transform_weather_data(spark, raw_data)
-        load_data(fact_df, dim_df)
-        spark.stop()
-    except Exception as e:
-        print(f"Error in ETL process: {str(e)}")
-        raise
 
 with dag:
     create_tables_task = PythonOperator(
