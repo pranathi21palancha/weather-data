@@ -151,7 +151,7 @@ The project uses a star schema with the following structure:
      - latitude
      - longitude
 
-## Database
+## Database Result
 
 ![Database Diagram](0.png)
 
