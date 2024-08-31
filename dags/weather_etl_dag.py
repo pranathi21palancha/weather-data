@@ -28,9 +28,6 @@ dag = DAG(
     schedule_interval=timedelta(days=1),
 )
 
-def create_tables_task():
-    create_tables()
-
 def etl_process():
     spark = create_spark_session()
     raw_data = fetch_weather_data()
@@ -39,9 +36,9 @@ def etl_process():
     spark.stop()
 
 with dag:
-    create_tables = PythonOperator(
+    create_tables_task = PythonOperator(
         task_id='create_tables',
-        python_callable=create_tables_task,
+        python_callable=create_tables,
     )
     
     etl_task = PythonOperator(
@@ -49,4 +46,4 @@ with dag:
         python_callable=etl_process,
     )
     
-    create_tables >> etl_task
+    create_tables_task >> etl_task
