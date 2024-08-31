@@ -6,15 +6,12 @@ from datetime import datetime, timedelta
 from pyspark.sql import SparkSession
 from dotenv import load_dotenv
 
-# Add the project root directory to the Python path
 dag_folder = os.path.dirname(os.path.abspath(__file__))
 project_root = os.path.abspath(os.path.join(dag_folder, '..'))
 sys.path.insert(0, project_root)
 
-# Load environment variables
 load_dotenv(os.path.join(project_root, '.env'))
 
-# Get database connection details from environment variables
 DB_USER = os.getenv('POSTGRES_USER')
 DB_PASSWORD = os.getenv('POSTGRES_PASSWORD')
 DB_HOST = os.getenv('POSTGRES_HOST')
@@ -35,6 +32,7 @@ def create_spark_session():
         .config("spark.hadoop.javax.jdo.option.ConnectionURL", f"jdbc:postgresql://{DB_HOST}:{DB_PORT}/{DB_NAME}") \
         .config("spark.hadoop.javax.jdo.option.ConnectionUserName", DB_USER) \
         .config("spark.hadoop.javax.jdo.option.ConnectionPassword", DB_PASSWORD) \
+        .master("local[*]") \
         .getOrCreate()
 
 def etl_process():

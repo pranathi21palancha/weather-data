@@ -28,7 +28,6 @@ if __name__ == "__main__":
         .appName("WeatherDataTransformer") \
         .getOrCreate()
 
-    # Sample data for testing
     test_data = [
         {
             'city_name': 'New York',

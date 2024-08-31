@@ -1,5 +1,6 @@
 import os
 import sys
+from pyspark.sql import SparkSession
 from sqlalchemy import create_engine, text
 from dotenv import load_dotenv
 import logging
@@ -51,6 +52,7 @@ def create_tables():
         raise
 
 def load_data(fact_df, dim_df):
+    logger.info("Starting data load process")
     try:
         dim_df.write \
             .format("jdbc") \
