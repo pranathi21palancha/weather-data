@@ -1,15 +1,5 @@
-from pyspark.sql import SparkSession
 from pyspark.sql.functions import col, to_date, to_timestamp, round, dense_rank
 from pyspark.sql.window import Window
-import pyspark.sql.functions as F
-from datetime import datetime
-
-def create_spark_session():
-    return SparkSession.builder \
-        .appName("WeatherETL") \
-        .config("spark.jars", "/Users/stuartmills/Documents/weather-data-integration/postgresql-42.7.4.jar") \
-        .config("spark.driver.extraClassPath", "/Users/stuartmills/Documents/weather-data-integration/postgresql-42.7.4.jar") \
-        .getOrCreate()
 
 def transform_weather_data(spark, raw_data):
     df = spark.createDataFrame(raw_data)
@@ -31,11 +21,14 @@ def transform_weather_data(spark, raw_data):
     
     return fact_df, dim_df
 
-def get_latest_batch_id():
-    return datetime.now().strftime("%Y%m%d_%H%M%S")
-
 if __name__ == "__main__":
-    # Test data
+    from pyspark.sql import SparkSession
+    
+    spark = SparkSession.builder \
+        .appName("WeatherDataTransformer") \
+        .getOrCreate()
+
+    # Sample data for testing
     test_data = [
         {
             'city_name': 'New York',
@@ -60,11 +53,13 @@ if __name__ == "__main__":
             'datetime': '2023-05-01T12:00:00'
         }
     ]
+
+    fact_df, dim_df = transform_weather_data(spark, test_data)
     
-    fact_df, dim_df = transform_weather_data(test_data)
     print("Fact DataFrame:")
     fact_df.show()
+    
     print("\nDimension DataFrame:")
     dim_df.show()
-    
-    print(f"\nLatest Batch ID: {get_latest_batch_id()}")
+
+    spark.stop()

@@ -19,9 +19,6 @@ CITIES = [
     {"name": "Sydney", "country": "AU"}
 ]
 
-def kelvin_to_celsius(kelvin):
-    return kelvin - 273.15
-
 def fetch_weather_data():
     weather_data = []
     

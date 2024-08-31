@@ -1,18 +1,12 @@
 import os
 import sys
-from pyspark.sql import SparkSession
 from sqlalchemy import create_engine, text
 from dotenv import load_dotenv
 import logging
 
-# Set up logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Set the PYSPARK_SUBMIT_ARGS environment variable
-os.environ['PYSPARK_SUBMIT_ARGS'] = '--jars /Users/stuartmills/Documents/weather-data-integration/postgresql-42.7.4.jar pyspark-shell'
-
-# Add the project root to the Python path
 project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 sys.path.append(project_root)
 
@@ -25,13 +19,6 @@ DB_PORT = os.getenv('POSTGRES_PORT')
 DB_NAME = os.getenv('POSTGRES_DB')
 
 JDBC_URL = f"jdbc:postgresql://{DB_HOST}:{DB_PORT}/{DB_NAME}"
-
-def create_spark_session():
-    return SparkSession.builder \
-        .appName("WeatherETL") \
-        .config("spark.jars", "/Users/stuartmills/Documents/weather-data-integration/postgresql-42.7.4.jar") \
-        .config("spark.driver.extraClassPath", "/Users/stuartmills/Documents/weather-data-integration/postgresql-42.7.4.jar") \
-        .getOrCreate()
 
 def create_tables():
     engine = create_engine(f"postgresql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}")
@@ -64,8 +51,6 @@ def create_tables():
         raise
 
 def load_data(fact_df, dim_df):
-    spark = create_spark_session()
-    
     try:
         dim_df.write \
             .format("jdbc") \
@@ -94,23 +79,3 @@ def load_data(fact_df, dim_df):
 
 if __name__ == "__main__":
     create_tables()
-    spark = create_spark_session()
-    
-    try:
-        fact_data = [
-            ('2023-05-01', '12:00:00', 0, 22.5, 60, 1015, 18.36),
-            ('2023-05-01', '12:00:00', 1, 15.3, 72, 1008, 15.12)
-        ]
-        fact_df = spark.createDataFrame(fact_data, ["date", "time", "city_id", "temperature", "humidity", "pressure", "wind_speed"])
-
-        dim_data = [
-            (0, 'New York', 'US', 40.7128, -74.0060),
-            (1, 'London', 'GB', 51.5074, -0.1278)
-        ]
-        dim_df = spark.createDataFrame(dim_data, ["city_id", "city_name", "country", "latitude", "longitude"])
-
-        load_data(fact_df, dim_df)
-    except Exception as e:
-        logger.error(f"Error in main execution: {str(e)}")
-    finally:
-        spark.stop()
