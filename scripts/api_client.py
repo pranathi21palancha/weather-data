@@ -12,11 +12,11 @@ if not API_KEY:
 BASE_URL = "http://api.openweathermap.org/data/2.5/weather"
 
 CITIES = [
+    {"name": "Austin", "country": "US"},
     {"name": "New York", "country": "US"},
     {"name": "London", "country": "GB"},
-    {"name": "Paris", "country": "FR"},
     {"name": "Tokyo", "country": "JP"},
-    {"name": "Sydney", "country": "AU"}
+    {"name": "Paris", "country": "FR"}
 ]
 
 def fetch_weather_data():
