@@ -35,8 +35,13 @@ def get_weather_data():
         result = connection.execute(query)
         df = pd.DataFrame(result.fetchall(), columns=result.keys())
     
-    # Convert date to string format
-    df['date'] = df['date'].dt.strftime('%Y-%m-%d')
+    # Convert date to string format if it's not already
+    if pd.api.types.is_datetime64_any_dtype(df['date']):
+        df['date'] = df['date'].dt.strftime('%Y-%m-%d')
+    else:
+        # If date is not in datetime format, we'll assume it's already a string
+        # You might want to add additional checks or conversions here if needed
+        pass
     
     # Convert temperature and humidity to float
     df['temperature'] = df['temperature'].astype(float)
