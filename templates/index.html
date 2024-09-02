@@ -33,6 +33,7 @@
         .chart {
             width: 45%;
             height: 90%;
+            position: relative;
         }
     </style>
 </head>
@@ -68,7 +69,7 @@
                 const chart = d3.select(selector);
                 const width = chart.node().getBoundingClientRect().width;
                 const height = chart.node().getBoundingClientRect().height;
-                const margin = {top: 40, right: 60, bottom: 50, left: 60};
+                const margin = {top: 40, right: 150, bottom: 50, left: 60};  // Increased right margin for legend
                 const innerWidth = width - margin.left - margin.right;
                 const innerHeight = height - margin.top - margin.bottom;
 
@@ -120,7 +121,7 @@
                     .data(cities)
                     .enter().append("g")
                     .attr("class", "legend")
-                    .attr("transform", (d, i) => `translate(0,${i * 20})`);
+                    .attr("transform", (d, i) => `translate(0,${i * 25})`);  // Increase vertical spacing
 
                 legend.append("rect")
                     .attr("x", innerWidth + 20)  // Adjust position
