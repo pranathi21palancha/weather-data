@@ -35,6 +35,13 @@ def get_weather_data():
         result = connection.execute(query)
         df = pd.DataFrame(result.fetchall(), columns=result.keys())
     
+    # Convert date to string format
+    df['date'] = df['date'].dt.strftime('%Y-%m-%d')
+    
+    # Convert temperature and humidity to float
+    df['temperature'] = df['temperature'].astype(float)
+    df['humidity'] = df['humidity'].astype(float)
+    
     return jsonify(df.to_dict(orient='records'))
 
 if __name__ == '__main__':
