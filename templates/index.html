@@ -50,10 +50,11 @@
             // Process data
             const cities = [...new Set(data.map(d => d.city_name))];
             const parseDate = d3.timeParse("%Y-%m-%d");
-            data.forEach(d => {
+            data = data.filter(d => {
                 d.date = parseDate(d.date);
                 d.temperature = +d.temperature;
                 d.humidity = +d.humidity;
+                return d.date && !isNaN(d.temperature) && !isNaN(d.humidity);
             });
 
             // Temperature Chart
@@ -85,7 +86,8 @@
 
                 const line = d3.line()
                     .x(d => x(d.date))
-                    .y(d => y(yValue(d)));
+                    .y(d => y(yValue(d)))
+                    .defined(d => !isNaN(x(d.date)) && !isNaN(y(yValue(d))));
 
                 cities.forEach(city => {
                     const cityData = data.filter(d => d.city_name === city);

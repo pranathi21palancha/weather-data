@@ -27,23 +27,15 @@ def get_weather_data():
     SELECT c.city_name, w.date, w.temperature, w.humidity
     FROM weather_measurements w
     JOIN cities c ON w.city_id = c.city_id
-    ORDER BY w.date DESC
-    LIMIT 100
+    WHERE w.date BETWEEN '2023-08-21' AND '2023-08-30'
+    ORDER BY c.city_name, w.date
     """)
     
     with engine.connect() as connection:
         result = connection.execute(query)
         df = pd.DataFrame(result.fetchall(), columns=result.keys())
     
-    # Convert date to string format if it's not already
-    if pd.api.types.is_datetime64_any_dtype(df['date']):
-        df['date'] = df['date'].dt.strftime('%Y-%m-%d')
-    else:
-        # If date is not in datetime format, we'll assume it's already a string
-        # You might want to add additional checks or conversions here if needed
-        pass
-    
-    # Convert temperature and humidity to float
+    df['date'] = pd.to_datetime(df['date']).dt.strftime('%Y-%m-%d')
     df['temperature'] = df['temperature'].astype(float)
     df['humidity'] = df['humidity'].astype(float)
     
