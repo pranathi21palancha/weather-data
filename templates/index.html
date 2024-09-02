@@ -60,10 +60,10 @@
             });
 
             // Temperature Chart
-            createLineChart('#temperature-chart', data, 'Temperature', d => d.temperature, '°C');
+            createLineChart('#temperature-chart', data, 'Temperature (°C)', d => d.temperature, '°C');
 
             // Humidity Chart
-            createLineChart('#humidity-chart', data, 'Humidity', d => d.humidity, '%');
+            createLineChart('#humidity-chart', data, 'Humidity (%)', d => d.humidity, '%');
 
             function createLineChart(selector, data, title, yValue, yUnit) {
                 const chart = d3.select(selector);
