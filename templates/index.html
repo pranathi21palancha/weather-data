@@ -13,15 +13,19 @@
             height: 100%;
             font-family: Arial, sans-serif;
             overflow: hidden;
+            background-color: #f2f2f2;
         }
         .container {
             display: flex;
             flex-direction: column;
             height: 100vh;
+            padding: 20px;
+            box-sizing: border-box;
         }
         h1 {
             text-align: center;
             margin: 10px 0;
+            color: #333;
         }
         .charts {
             display: flex;
@@ -32,6 +36,18 @@
         .chart {
             width: 45%;
             height: 90%;
+        }
+        .tooltip {
+            position: absolute;
+            text-align: center;
+            width: 60px;
+            height: 28px;
+            padding: 2px;
+            font: 12px sans-serif;
+            background: lightsteelblue;
+            border: 0px;
+            border-radius: 8px;
+            pointer-events: none;
         }
     </style>
 </head>
@@ -45,9 +61,7 @@
     </div>
 
     <script>
-        // Fetch data from API
         d3.json('/api/weather_data').then(data => {
-            // Process data
             const cities = [...new Set(data.map(d => d.city_name))];
             const parseDate = d3.timeParse("%Y-%m-%d");
             data = data.filter(d => {
@@ -57,29 +71,27 @@
                 return d.date && !isNaN(d.temperature) && !isNaN(d.humidity);
             });
 
-            // Temperature Chart
-            createLineChart('#temperature-chart', data, 'Temperature', d => d.temperature, '°C');
-
-            // Humidity Chart
-            createLineChart('#humidity-chart', data, 'Humidity', d => d.humidity, '%');
+            createLineChart('#temperature-chart', data, 'Average Daily Temperature (°C)', d => d.temperature, '°C');
+            createLineChart('#humidity-chart', data, 'Average Daily Humidity (%)', d => d.humidity, '%');
 
             function createLineChart(selector, data, title, yValue, yUnit) {
                 const chart = d3.select(selector);
                 const width = chart.node().getBoundingClientRect().width;
                 const height = chart.node().getBoundingClientRect().height;
-                const margin = {top: 40, right: 60, bottom: 50, left: 60};
+                const margin = {top: 60, right: 120, bottom: 60, left: 80};
                 const innerWidth = width - margin.left - margin.right;
                 const innerHeight = height - margin.top - margin.bottom;
 
                 const svg = chart.append("svg")
-                    .attr("width", width)
-                    .attr("height", height)
+                    .attr("width", "100%")
+                    .attr("height", "100%")
+                    .attr("viewBox", `0 0 ${width} ${height}`)
                     .append("g")
                     .attr("transform", `translate(${margin.left},${margin.top})`);
 
                 const x = d3.scaleTime().range([0, innerWidth]);
                 const y = d3.scaleLinear().range([innerHeight, 0]);
-                const color = d3.scaleOrdinal(d3.schemeCategory10);
+                const color = d3.scaleOrdinal(d3.schemeSet2);
 
                 x.domain(d3.extent(data, d => d.date));
                 y.domain([0, d3.max(data, yValue)]);
@@ -95,7 +107,7 @@
                         .datum(cityData)
                         .attr("fill", "none")
                         .attr("stroke", color(city))
-                        .attr("stroke-width", 1.5)
+                        .attr("stroke-width", 2)
                         .attr("d", line);
                 });
 
@@ -104,16 +116,16 @@
                     .call(d3.axisBottom(x));
 
                 svg.append("g")
-                    .call(d3.axisLeft(y));
+                    .call(d3.axisLeft(y).ticks(6));
 
                 svg.append("text")
                     .attr("x", innerWidth / 2)
                     .attr("y", -margin.top / 2)
                     .attr("text-anchor", "middle")
-                    .style("font-size", "16px")
+                    .style("font-size", "18px")
+                    .style("font-weight", "bold")
                     .text(title);
 
-                // Add legend
                 const legend = svg.selectAll(".legend")
                     .data(cities)
                     .enter().append("g")
@@ -121,17 +133,30 @@
                     .attr("transform", (d, i) => `translate(0,${i * 20})`);
 
                 legend.append("rect")
-                    .attr("x", innerWidth)
+                    .attr("x", innerWidth + 40)
                     .attr("width", 18)
                     .attr("height", 18)
                     .style("fill", color);
 
                 legend.append("text")
-                    .attr("x", innerWidth - 6)
+                    .attr("x", innerWidth + 34)
                     .attr("y", 9)
                     .attr("dy", ".35em")
-                    .style("text-anchor", "end")
+                    .style("text-anchor", "start")
                     .text(d => d);
+
+                const tooltip = d3.select("body").append("div")
+                    .attr("class", "tooltip")
+                    .style("opacity", 0);
+
+                svg.selectAll("path")
+                    .on("mouseover", (event, d) => {
+                        tooltip.transition().duration(200).style("opacity", .9);
+                        tooltip.html(`${d.city_name}<br/>${yValue(d)} ${yUnit}`)
+                            .style("left", (event.pageX) + "px")
+                            .style("top", (event.pageY - 28) + "px");
+                    })
+                    .on("mouseout", d => tooltip.transition().duration(500).style("opacity", 0));
             }
         });
     </script>
