@@ -22,6 +22,7 @@
         h1 {
             text-align: center;
             margin: 10px 0;
+            color: black; /* Set the title color to black */
         }
         .charts {
             display: flex;
@@ -50,10 +51,11 @@
             // Process data
             const cities = [...new Set(data.map(d => d.city_name))];
             const parseDate = d3.timeParse("%Y-%m-%d");
-            data.forEach(d => {
+            data = data.filter(d => {
                 d.date = parseDate(d.date);
                 d.temperature = +d.temperature;
                 d.humidity = +d.humidity;
+                return d.date && !isNaN(d.temperature) && !isNaN(d.humidity);
             });
 
             // Temperature Chart
@@ -85,7 +87,8 @@
 
                 const line = d3.line()
                     .x(d => x(d.date))
-                    .y(d => y(yValue(d)));
+                    .y(d => y(yValue(d)))
+                    .defined(d => !isNaN(x(d.date)) && !isNaN(y(yValue(d))));
 
                 cities.forEach(city => {
                     const cityData = data.filter(d => d.city_name === city);
@@ -109,6 +112,7 @@
                     .attr("y", -margin.top / 2)
                     .attr("text-anchor", "middle")
                     .style("font-size", "16px")
+                    .style("fill", "black")  // Set title color to black
                     .text(title);
 
                 // Add legend
@@ -119,16 +123,16 @@
                     .attr("transform", (d, i) => `translate(0,${i * 20})`);
 
                 legend.append("rect")
-                    .attr("x", innerWidth)
+                    .attr("x", innerWidth + 20)  // Adjust position
                     .attr("width", 18)
                     .attr("height", 18)
                     .style("fill", color);
 
                 legend.append("text")
-                    .attr("x", innerWidth - 6)
+                    .attr("x", innerWidth + 45)  // Adjust position to move text beside the color block
                     .attr("y", 9)
                     .attr("dy", ".35em")
-                    .style("text-anchor", "end")
+                    .style("text-anchor", "start")
                     .text(d => d);
             }
         });
