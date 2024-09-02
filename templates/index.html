@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Weather Data Visualization</title>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; }
+        .chart { margin-bottom: 20px; }
+    </style>
+</head>
+<body>
+    <h1>Weather Data Visualization</h1>
+    <div id="temperature-chart" class="chart"></div>
+    <div id="humidity-chart" class="chart"></div>
+
+    <script>
+        // Fetch data from API
+        d3.json('/api/weather_data').then(data => {
+            // Process data
+            const cities = [...new Set(data.map(d => d.city_name))];
+            const parseDate = d3.timeParse("%Y-%m-%d");
+            data.forEach(d => d.date = parseDate(d.date));
+
+            // Temperature Chart
+            createLineChart('#temperature-chart', data, 'Temperature', d => d.temperature, '°C');
+
+            // Humidity Chart
+            createLineChart('#humidity-chart', data, 'Humidity', d => d.humidity, '%');
+
+            function createLineChart(selector, data, title, yValue, yUnit) {
+                const margin = {top: 20, right: 20, bottom: 30, left: 50};
+                const width = 600 - margin.left - margin.right;
+                const height = 400 - margin.top - margin.bottom;
+
+                const svg = d3.select(selector)
+                    .append("svg")
+                    .attr("width", width + margin.left + margin.right)
+                    .attr("height", height + margin.top + margin.bottom)
+                    .append("g")
+                    .attr("transform", `translate(${margin.left},${margin.top})`);
+
+                const x = d3.scaleTime().range([0, width]);
+                const y = d3.scaleLinear().range([height, 0]);
+                const color = d3.scaleOrdinal(d3.schemeCategory10);
+
+                x.domain(d3.extent(data, d => d.date));
+                y.domain([0, d3.max(data, yValue)]);
+
+                const line = d3.line()
+                    .x(d => x(d.date))
+                    .y(d => y(yValue(d)));
+
+                cities.forEach(city => {
+                    const cityData = data.filter(d => d.city_name === city);
+                    svg.append("path")
+                        .datum(cityData)
+                        .attr("fill", "none")
+                        .attr("stroke", color(city))
+                        .attr("stroke-width", 1.5)
+                        .attr("d", line);
+                });
+
+                svg.append("g")
+                    .attr("transform", `translate(0,${height})`)
+                    .call(d3.axisBottom(x));
+
+                svg.append("g")
+                    .call(d3.axisLeft(y));
+
+                svg.append("text")
+                    .attr("x", width / 2)
+                    .attr("y", 0 - (margin.top / 2))
+                    .attr("text-anchor", "middle")
+                    .style("font-size", "16px")
+                    .text(title);
+
+                // Add legend
+                const legend = svg.selectAll(".legend")
+                    .data(cities)
+                    .enter().append("g")
+                    .attr("class", "legend")
+                    .attr("transform", (d, i) => `translate(0,${i * 20})`);
+
+                legend.append("rect")
+                    .attr("x", width - 18)
+                    .attr("width", 18)
+                    .attr("height", 18)
+                    .style("fill", color);
+
+                legend.append("text")
+                    .attr("x", width - 24)
+                    .attr("y", 9)
+                    .attr("dy", ".35em")
+                    .style("text-anchor", "end")
+                    .text(d => d);
+            }
+        });
+    </script>
+</body>
+</html>
