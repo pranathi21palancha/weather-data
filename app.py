@@ -30,7 +30,8 @@ def get_weather_data():
     ORDER BY w.date DESC
     LIMIT 100
     """
-    df = pd.read_sql(query, engine)
+    with engine.connect() as connection:
+        df = pd.read_sql(query, connection)
     return jsonify(df.to_dict(orient='records'))
 
 if __name__ == '__main__':
