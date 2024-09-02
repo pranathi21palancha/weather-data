@@ -1,5 +1,5 @@
 from flask import Flask, jsonify, render_template
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, text
 import pandas as pd
 from dotenv import load_dotenv
 import os
@@ -23,15 +23,18 @@ def index():
 @app.route('/api/weather_data')
 def get_weather_data():
     engine = create_engine(DATABASE_URL)
-    query = """
+    query = text("""
     SELECT c.city_name, w.date, w.temperature, w.humidity
     FROM weather_measurements w
     JOIN cities c ON w.city_id = c.city_id
     ORDER BY w.date DESC
     LIMIT 100
-    """
+    """)
+    
     with engine.connect() as connection:
-        df = pd.read_sql(query, connection)
+        result = connection.execute(query)
+        df = pd.DataFrame(result.fetchall(), columns=result.keys())
+    
     return jsonify(df.to_dict(orient='records'))
 
 if __name__ == '__main__':
