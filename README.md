@@ -28,6 +28,7 @@ The Weather Data Integration Project demonstrates key data engineering skills by
 - Apache Airflow
 - PySpark
 - Requests
+- Flask
 
 ## Setup
 
