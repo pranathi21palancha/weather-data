@@ -29,35 +29,6 @@ The Weather Data Integration Project demonstrates key data engineering skills by
 - PySpark
 - Requests
 
-## Project Structure
-
-```
-weather-data-integration/
-│
-├── dags/
-│   └── weather_etl_dag.py
-│
-├── scripts/
-│   ├── api_client.py
-│   ├── data_transformer.py
-│   ├── data_loader.py
-│   └── sql_queries.py
-│
-├── tests/
-│   ├── test_api_client.py
-│   ├── test_data_transformer.py
-│   └── test_data_loader.py
-│
-├── config/
-│   └── config.ini
-│
-├── logs/
-│
-├── requirements.txt
-├── README.md
-└── .gitignore
-```
-
 ## Setup
 
 1. Clone the repository:
@@ -161,4 +132,4 @@ The project uses a star schema with the following structure:
 
 ## Technical Summary
 
-This project demonstrates key data engineering concepts and tools. It uses Python for scripting, with libraries such as Requests for API interaction and Apache Spark for big data processing. The ETL process is orchestrated using Apache Airflow, allowing for scheduled, repeatable workflows. Data is stored in a PostgreSQL database, interfaced with Spark for efficient data loading. The project structure follows best practices with separate modules for extraction (api_client.py), transformation (data_transformer.py), and loading (data_loader.py). Error handling, logging, and unit testing are implemented throughout to ensure robustness and reliability. Environment variables are used for configuration management, adhering to security best practices. This architecture demonstrates scalability and maintainability, key aspects of production-grade data engineering solutions, particularly in big data environments.
+This project demonstrates key data engineering concepts and tools. It uses Python for scripting, with libraries such as Requests for API interaction and Apache Spark for big data processing. The ETL process is orchestrated using Apache Airflow, allowing for scheduled, repeatable workflows. Data is stored in a PostgreSQL database, interfaced with Spark for efficient data loading. The project structure follows best practices with separate modules for extraction (api_client.py), transformation (data_transformer.py), and loading (data_loader.py). Error handling, logging, and unit testing are implemented throughout to ensure robustness and reliability. Environment variables are used for configuration management, adhering to security best practices. For data visualization, a Flask web app utilizes SQLAlchemy and Pandas to query and serve weather data from the database. This architecture demonstrates scalability and maintainability, key aspects of production-grade data engineering solutions, particularly in big data environments.
