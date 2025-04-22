@@ -53,3 +53,6 @@ if __name__ == "__main__":
     data = fetch_weather_data()
     for item in data:
         print(item)
+
+
+
